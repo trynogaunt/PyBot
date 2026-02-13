@@ -65,7 +65,21 @@ def register(tree: app_commands.CommandTree, config):
         await interaction.response.send_message(
             embed=embed, ephemeral=config.get("ephemeral_default", True) if isinstance(config, dict) else True
         )
-    
-    async 
+
+    @group.command(name="remind", description="Créer un rappel")
+    async def remind(interaction: discord.Interaction, count: int, unit: str, *, message: str):
+        time_units = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+        if unit not in time_units:
+            await interaction.response.send_message(
+                "❌ Unité de temps invalide. Utilisez 's' pour secondes, 'm' pour minutes, 'h' pour heures ou 'd' pour jours.",
+                ephemeral=True,
+            )
+            return
+        delay = count * time_units[unit]
+        await interaction.response.send_message(
+            f"⏰ Rappel créé ! Je vous rappellerai dans {count} {unit}.", ephemeral=True
+        )
+        await discord.utils.sleep_until(discord.utils.utcnow() + discord.timedelta(seconds=delay))
+        await interaction.followup.send(f"🔔 Rappel : {message}", ephemeral=True)
 
     tree.add_command(group)
