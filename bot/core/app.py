@@ -46,6 +46,9 @@ def setup_logging(level: str = "INFO") -> None:
 class BotApp(commands.Bot):
     def __init__(self, guild_id: int) -> None:
         intents = discord.Intents.default()
+        intents.message_content = True
+        intents.guilds = True
+        intents.members = True
         super().__init__(command_prefix="!", intents=intents)
         self.guild = discord.Object(id=guild_id)
 

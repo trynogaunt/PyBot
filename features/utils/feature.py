@@ -41,6 +41,7 @@ def register(tree: app_commands.CommandTree, config):
     @group.command(name="serverinfo", description="Affiche les informations du serveur")
     async def server_info_command(interaction: discord.Interaction):
         guild = interaction.guild
+        print(guild.owner if guild else "No guild found")
         if not guild:
             await interaction.response.send_message(
                 "❌ Impossible de récupérer les informations du serveur.", ephemeral=True
@@ -48,7 +49,7 @@ def register(tree: app_commands.CommandTree, config):
             return
         embed = discord.Embed(title=f"Informations sur {guild.name}", color=discord.Color.blue())
         embed.add_field(name="ID", value=guild.id, inline=False)
-        embed.add_field(name="Propriétaire", value=guild.owner, inline=False)
+        embed.add_field(name="Propriétaire", value=guild.owner.name if guild.owner else "Inconnu", inline=False)
         embed.add_field(name="Membres", value=guild.member_count, inline=False)
         embed.set_thumbnail(url=guild.icon.url if guild.icon else None)
         await interaction.response.send_message(
