@@ -3,6 +3,8 @@ import datetime
 import discord
 from discord import app_commands
 
+from bot.core.checks import is_staff
+
 FEATURE = {
     "slug": "utils",
     "name": "Utils Feature",
@@ -83,5 +85,54 @@ def register(tree: app_commands.CommandTree, config):
         )
         await discord.utils.sleep_until(discord.utils.utcnow() + datetime.timedelta(seconds=delay))
         await interaction.user.send(f"⏰ Rappel : {message}")
+
+    @group.command(name="ping", description="Affiche la latence du bot")
+    async def ping(interaction: discord.Interaction):
+        latency = interaction.client.latency * 1000  # Convertir en millisecondes
+        await interaction.response.send_message(f"🏓 Pong ! Latence : {latency:.2f} ms", ephemeral=True)
+
+    @group.command(name="uptime", description="Affiche le temps de fonctionnement du bot")
+    async def uptime(interaction: discord.Interaction):
+        if not hasattr(interaction.client, "start_time"):
+            await interaction.response.send_message(
+                "❌ Impossible de récupérer le temps de fonctionnement.", ephemeral=True
+            )
+            return
+        uptime_seconds = (discord.utils.utcnow() - interaction.client.start_time).total_seconds()
+        uptime_str = str(datetime.timedelta(seconds=int(uptime_seconds)))
+        await interaction.response.send_message(f"⏱️ Temps de fonctionnement : {uptime_str}", ephemeral=True)
+
+    @group.command(name="invite", description="Affiche le lien d'invitation du bot")
+    async def invite(interaction: discord.Interaction):
+        invite_link = f"https://discord.com/api/oauth2/authorize?client_id={interaction.client.user.id}&permissions=8&scope=bot%20applications.commands"
+        await interaction.response.send_message(f"🔗 Voici le lien d'invitation du bot : {invite_link}", ephemeral=True)
+
+    @group.command(name="embed_message", description="Affiche un message dans un embed")
+    @app_commands.describe(
+        title="Le titre de l'embed",
+        description="La description de l'embed",
+        color="La couleur de l'embed (blue, red, green, yellow, purple, orange)",
+    )
+    @is_staff()
+    async def embed_message(interaction: discord.Interaction, title: str, description: str, color: str = "blue"):
+        if color.lower() not in ["blue", "red", "green", "yellow", "purple", "orange"]:
+            await interaction.response.send_message(
+                "❌ Couleur invalide. Utilisez 'blue', 'red', 'green', 'yellow', 'purple' ou 'orange'.", ephemeral=True
+            )
+            return
+        color_mapping = {
+            "blue": discord.Color.blue(),
+            "red": discord.Color.red(),
+            "green": discord.Color.green(),
+            "yellow": discord.Color.gold(),
+            "purple": discord.Color.purple(),
+            "orange": discord.Color.orange(),
+        }
+        embed = discord.Embed(
+            title=title, description=description, color=color_mapping.get(color.lower(), discord.Color.blue())
+        )
+        await interaction.response.send_message(
+            embed=embed, ephemeral=config.get("ephemeral_default", True) if isinstance(config, dict) else True
+        )
 
     tree.add_command(group)
