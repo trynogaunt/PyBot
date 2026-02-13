@@ -1,4 +1,4 @@
-enabled_features = ["ping", "say", "version", "test_checks", "utils"]
+enabled_features = ["ping", "say", "version", "test_checks", "utils", "welcome"]
 
 [features]
 [features.say]
@@ -7,3 +7,7 @@ ephemeral_default = true
 [features.utils]
 ephemeral_default = true
 guild_id=1218400838196662403
+
+[features.welcome]
+ephemeral_default = true
+welcome_message = "Bienvenue {member} sur {guild} !"
