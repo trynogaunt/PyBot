@@ -1,3 +1,5 @@
+import datetime
+
 import discord
 from discord import app_commands
 
@@ -79,7 +81,7 @@ def register(tree: app_commands.CommandTree, config):
         await interaction.response.send_message(
             f"⏰ Rappel créé ! Je vous rappellerai dans {count} {unit}.", ephemeral=True
         )
-        await discord.utils.sleep_until(discord.utils.utcnow() + discord.timedelta(seconds=delay))
-        await interaction.followup.send(f"🔔 Rappel : {message}", ephemeral=True)
+        await discord.utils.sleep_until(discord.utils.utcnow() + datetime.timedelta(seconds=delay))
+        await interaction.user.send(f"⏰ Rappel : {message}")
 
     tree.add_command(group)
