@@ -38,4 +38,21 @@ def register(tree: app_commands.CommandTree, config):
             help_message, ephemeral=config.get("ephemeral_default", True) if isinstance(config, dict) else True
         )
 
+    @group.command(name="serverinfo", description="Affiche les informations du serveur")
+    async def server_info_command(interaction: discord.Interaction):
+        guild = interaction.guild
+        if not guild:
+            await interaction.response.send_message(
+                "❌ Impossible de récupérer les informations du serveur.", ephemeral=True
+            )
+            return
+        embed = discord.Embed(title=f"Informations sur {guild.name}", color=discord.Color.blue())
+        embed.add_field(name="ID", value=guild.id, inline=False)
+        embed.add_field(name="Propriétaire", value=guild.owner, inline=False)
+        embed.add_field(name="Membres", value=guild.member_count, inline=False)
+        embed.set_thumbnail(url=guild.icon.url if guild.icon else None)
+        await interaction.response.send_message(
+            embed=embed, ephemeral=config.get("ephemeral_default", True) if isinstance(config, dict) else True
+        )
+
     tree.add_command(group)
