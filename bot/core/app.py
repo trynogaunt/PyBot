@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from ..core.checks import set_staff_roles
 from ..core.config import load_config, load_env
 from ..core.loader import load_features
+from ..db.pool import DatabasePool
 
 
 def setup_logging(level: str = "INFO") -> None:
@@ -51,6 +52,17 @@ class BotApp(commands.Bot):
         intents.members = True
         super().__init__(command_prefix="!", intents=intents)
         self.guild = discord.Object(id=guild_id)
+        self.db_pool = None
+
+    async def on_startup(self) -> None:
+        logging.getLogger(__name__).info("Bot is starting up...")
+        self.db_pool = DatabasePool()
+        await self.db_pool.connect()
+
+    async def on_shutdown(self) -> None:
+        logging.getLogger(__name__).info("Bot is shutting down...")
+        if self.db_pool:
+            await self.db_pool.disconnect()
 
     async def setup_hook(self) -> None:
         self.tree.on_error = self.on_tree_error
