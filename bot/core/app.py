@@ -58,7 +58,8 @@ class BotApp(commands.Bot):
         logging.getLogger(__name__).info("Bot is starting up...")
         env = load_env()
         database_url = env.database_url
-        self.db_pool = DatabasePool(database_url=database_url)
+        schemas = env.database_schemas if hasattr(env, "database_schemas") else None
+        self.db_pool = DatabasePool(database_url=database_url, schemas=schemas)
         await self.db_pool.connect()
 
     async def on_shutdown(self) -> None:

@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import List, Optional
 
 import asyncpg
 
@@ -25,7 +25,7 @@ class DatabasePool:
         if self.pool:
             await self.pool.close()
 
-    async def create_table(self, schema: str, table_name: str, columns: str):
+    async def _create_table(self, schema: str, table_name: str, columns: List[str]):
         if not self.pool:
             raise ValueError("Database pool is not initialized.")
         available_schemas = await self.get_available_schemas()
@@ -35,7 +35,8 @@ class DatabasePool:
             await connection.execute(
                 f"""
                 CREATE TABLE IF NOT EXISTS {schema}.{table_name} (
-                    {columns}
+                    {', '.join(columns)}
+
                 );
             """
             )
@@ -53,7 +54,7 @@ class DatabasePool:
             )
             return [row["schema_name"] for row in rows]
 
-    async def create_schema(self, schema: str):
+    async def _create_schema(self, schema: str):
         if not self.pool:
             raise ValueError("Database pool is not initialized.")
         if not self._validate_schema(schema):
@@ -65,7 +66,7 @@ class DatabasePool:
             """
             )
 
-    async def drop_schema(self, schema: str):
+    async def _drop_schema(self, schema: str):
         if not self.pool:
             raise ValueError("Database pool is not initialized.")
         if self._validate_schema(schema):
@@ -88,11 +89,14 @@ class DatabasePool:
         # add all schemas that are missing from env to the database
         if missing_schemas:
             for schema in missing_schemas:
-                await self.create_schema(schema)
+                await self._create_schema(schema)
 
         available_schemas = await self.get_available_schemas()
 
         # drop all schemas that are not in env but are in the database
         for schema in available_schemas:
             if not self._validate_schema(schema):
-                await self.drop_schema(schema)
+                await self._drop_schema(schema)
+
+    async def add_table(self, table_name: str, columns: str, schema: str = "features"):
+        await self._create_table(schema, table_name, columns)
