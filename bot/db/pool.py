@@ -56,6 +56,8 @@ class DatabasePool:
     async def create_schema(self, schema: str):
         if not self.pool:
             raise ValueError("Database pool is not initialized.")
+        if not self._validate_schema(schema):
+            raise ValueError(f"Schema must be one of {self.required_schemas}.")
         async with self.pool.acquire() as connection:
             await connection.execute(
                 f"""
@@ -66,6 +68,9 @@ class DatabasePool:
     async def drop_schema(self, schema: str):
         if not self.pool:
             raise ValueError("Database pool is not initialized.")
+        if self._validate_schema(schema):
+            raise ValueError(f"This schema is required and cannot be dropped: {schema}.")
+
         async with self.pool.acquire() as connection:
             await connection.execute(
                 f"""
