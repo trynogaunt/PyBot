@@ -34,3 +34,17 @@ class DatabasePool:
                 CREATE SCHEMA IF NOT EXISTS features;
             """
             )
+
+    async def create_table(self, schema: str, table_name: str, columns: str):
+        if not self.pool:
+            raise ValueError("Database pool is not initialized.")
+        if schema not in ("core", "features"):
+            raise ValueError("Schema must be 'core' or 'features'.")
+        async with self.pool.acquire() as connection:
+            await connection.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {schema}.{table_name} (
+                    {columns}
+                );
+            """
+            )
