@@ -8,3 +8,4 @@ logs/
 tests/
 .env.*
 *-cwd
+nul

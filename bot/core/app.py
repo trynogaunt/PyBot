@@ -65,6 +65,7 @@ class BotApp(commands.Bot):
             await self.db_pool.disconnect()
 
     async def setup_hook(self) -> None:
+        await self.on_startup()
         self.tree.on_error = self.on_tree_error
         self.tree.clear_commands(guild=None)
         await self.tree.sync()
@@ -106,6 +107,10 @@ class BotApp(commands.Bot):
         await interaction.response.send_message(
             "❌ Une erreur est survenue lors de l'exécution de la commande.", ephemeral=True
         )
+
+    async def on_disconnect(self) -> None:
+        logging.getLogger(__name__).warning("Bot has been disconnected. Attempting to reconnect...")
+        await self.on_shutdown()
 
 
 def main() -> None:
