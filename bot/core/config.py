@@ -17,6 +17,7 @@ class AppEnv:
     config_path: Path
     staff_roles_ids: List[int]
     database_url: str
+    database_schemas: List[str] = None
 
 
 def _project_root() -> Path:
@@ -79,12 +80,19 @@ def load_env() -> AppEnv:
     guild_id = int(guild_id_str)
     config_path = Path(config_path_str)
 
+    database_schemas_str = os.getenv("DATABASE_SCHEMAS", "").strip()
+    database_schemas = (
+        [schema.strip() for schema in database_schemas_str.split(",") if schema.strip()]
+        if database_schemas_str
+        else None
+    )
     return AppEnv(
         discord_token=discord_token,
         guild_id=guild_id,
         config_path=config_path,
         staff_roles_ids=[int(role_id) for role_id in staff_roles_ids_str.split(",") if role_id],
         database_url=database_url,
+        database_schemas=database_schemas,
     )
 
 
