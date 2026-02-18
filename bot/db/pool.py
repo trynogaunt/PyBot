@@ -49,7 +49,7 @@ class DatabasePool:
                 """
                     SELECT schema_name
                     FROM information_schema.schemata
-                    WHERE schema_name IN ('core', 'features');
+                    WHERE schema_name NOT IN ('information_schema', 'pg_catalog');
                 """
             )
             return [row["schema_name"] for row in rows]
