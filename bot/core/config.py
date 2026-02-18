@@ -16,6 +16,7 @@ class AppEnv:
     guild_id: int
     config_path: Path
     staff_roles_ids: List[int]
+    database_url: str
 
 
 def _project_root() -> Path:
@@ -55,6 +56,7 @@ def load_env() -> AppEnv:
         guild_id_str = os.getenv("GUILD_ID").strip()
         config_path_str = os.getenv("CONFIG_PATH", "config.toml").strip()
         staff_roles_ids_str = os.getenv("STAFF_ROLES_IDS", "").strip()
+        database_url = os.getenv("DATABASE_URL", "").strip()
     except Exception as e:
         log.error(f"Error reading environment variables: {e}")
         raise ValueError(
@@ -82,6 +84,7 @@ def load_env() -> AppEnv:
         guild_id=guild_id,
         config_path=config_path,
         staff_roles_ids=[int(role_id) for role_id in staff_roles_ids_str.split(",") if role_id],
+        database_url=database_url,
     )
 
 
