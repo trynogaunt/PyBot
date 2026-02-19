@@ -1,3 +1,4 @@
+import inspect
 from typing import List, Optional
 
 from .pool import DatabasePool
@@ -18,3 +19,17 @@ class FeaturePool(DatabasePool):
                 );
             """
             )
+
+    async def drop_table(self, table_name: str):
+        if not self.pool:
+            raise ValueError("Database pool is not initialized.")
+        async with self.pool.acquire() as connection:
+            await connection.execute(
+                f"""
+                    DROP TABLE IF EXISTS features.{table_name} CASCADE;
+                """
+            )
+
+    def inspect_test(self):
+        var_test = inspect.stack()
+        return var_test

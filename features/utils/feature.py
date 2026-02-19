@@ -135,4 +135,15 @@ def register(tree: app_commands.CommandTree, config):
             embed=embed, ephemeral=config.get("ephemeral_default", True) if isinstance(config, dict) else True
         )
 
+    @group.command(name="botinfo", description="Affiche les informations du bot")
+    async def botinfo(interaction: discord.Interaction):
+        info_str = f"**Nom du bot :** {interaction.client.user.name}\n"
+        info_str += f"**ID du bot :** {interaction.client.user.id}\n"
+        info_str += f"**Serveurs :** {len(interaction.client.guilds)}\n"
+        info_str += f"**Utilisateurs :** {len(interaction.client.users)}\n"
+        info_str += f"**Latence :** {interaction.client.latency * 1000:.2f} ms\n"
+        await interaction.response.send_message(
+            info_str, ephemeral=config.get("ephemeral_default", True) if isinstance(config, dict) else True
+        )
+
     tree.add_command(group)
