@@ -10,10 +10,14 @@ class AdminPool(DatabasePool):
         super().__init__(database_url=database_url, schemas=schemas)
 
     async def connect(self):
-        if not self.database_url:
-            raise ValueError("DATABASE_URL is not set.")
-        self.pool = await asyncpg.create_pool(self.database_url)
+        await super().connect()
         await self.scheme_check()
+
+    async def scheme_check(self):
+        available_schemas = await self.get_available_schemas()
+        missing_schemas = self.required_schemas - set(available_schemas)
+        if missing_schemas:
+            raise ValueError(f"Missing required schemas: {missing_schemas}")
 
     async def _create_table(self, schema: str, table_name: str, columns: List[str]):
         if not self.pool:
