@@ -55,6 +55,7 @@ class BotApp(commands.Bot):
         self.guild = discord.Object(id=guild_id)
         self.feature_pool = None
         self.admin_pool = None
+        self.installed_modules = []
 
     async def on_startup(self) -> None:
         logging.getLogger(__name__).info("Bot is starting up...")
@@ -65,9 +66,17 @@ class BotApp(commands.Bot):
         self.admin_pool = AdminPool(database_url=database_url, schemas=schemas)
         await self.feature_pool.connect()
         await self.admin_pool.connect()
+        await self.admin_pool.check_core_tables()
+        self.installed_modules = await self.admin_pool.get_installed_modules()
 
     async def on_shutdown(self) -> None:
         logging.getLogger(__name__).info("Bot is shutting down...")
+        for module_name in self.installed_modules:
+            try:
+                await self.admin_pool.set_module_installed(module_name, installed=False)
+                logging.getLogger(__name__).info(f"Module {module_name} marked as not installed in database.")
+            except Exception as e:
+                logging.getLogger(__name__).error(f"Error marking module {module_name} as not installed: {e}")
         if self.feature_pool:
             await self.feature_pool.disconnect()
         if self.admin_pool:
@@ -79,7 +88,9 @@ class BotApp(commands.Bot):
         self.tree.clear_commands(guild=None)
         await self.tree.sync()
 
-        loaded, failed = await load_features(self.tree, self.config, self.feature_pool)
+        loaded, failed, self.installed_modules = await load_features(
+            self.tree, self.config, self.feature_pool, self.installed_modules
+        )
         logging.getLogger(__name__).info(f"Loaded features: {list(loaded.keys())}")
         if failed:
             logging.getLogger(__name__).warning(f"Failed to load features: {failed}")

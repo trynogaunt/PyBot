@@ -32,7 +32,7 @@ class AdminPool(DatabasePool):
             """
             )
 
-    async def get_loaded_modules(self) -> List[str]:
+    async def get_installed_modules(self) -> List[str]:
         if not self.pool:
             raise ValueError("Database pool is not initialized.")
         async with self.pool.acquire() as connection:
@@ -41,6 +41,7 @@ class AdminPool(DatabasePool):
                 SELECT name FROM core.modules WHERE installed = TRUE;
             """
             )
+            print(f"Installed modules from database: {[row['name'] for row in rows]}")
             return [row["name"] for row in rows]
 
     async def set_module_installed(self, module_name: str, installed: bool = True):

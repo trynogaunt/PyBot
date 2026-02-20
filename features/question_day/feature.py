@@ -27,13 +27,14 @@ def register(tree: app_commands.CommandTree, config, database_interface: Feature
     tree.add_command(group)
 
 
-async def init_db(database_interface: FeaturePool):
+async def install(database_interface: FeaturePool) -> bool:
     print("Initializing database tables for Question of the Day feature...")
     try:
         await database_interface.add_table("questions", ["id SERIAL PRIMARY KEY", "question_text TEXT"])
-        return "Tables created successfully."
+        return True
     except Exception as e:
         print(f"Error initializing database tables: {e}")
+        return False
 
 
 async def add_question(database_interface: FeaturePool, question: str):
