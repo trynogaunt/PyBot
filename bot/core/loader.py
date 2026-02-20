@@ -12,7 +12,7 @@ def _command_qualified_keys(tree) -> set[str]:
     return {cmd.name for cmd in tree.get_commands()}
 
 
-def load_features(tree, config: Dict, database_interface) -> Tuple:
+async def load_features(tree, config: Dict, database_interface) -> Tuple:
     """Dynamically load and register features based on config, return dict of loaded modules and dict of failed ones with error messages
 
     Each feature module must be located at features/{slug}/feature.py and define:
@@ -93,8 +93,15 @@ def load_features(tree, config: Dict, database_interface) -> Tuple:
 
             register_signature = inspect.signature(module.register)
             params = list(register_signature.parameters.keys())
+            print(f"Register function parameters for feature {slug}: {params}")
             if "database_interface" in params:
+                print(f"Calling register for feature {slug} with database_interface")
                 module.register(tree, feature_cfg, database_interface)
+                log.debug(f"Appel de init_db pour le module {slug} après l'enregistrement des commandes.")
+                print(dir(module))
+                if hasattr(module, "init_db"):
+                    print(f"Calling init_db for feature {slug}")
+                    await module.init_db(database_interface)
             else:
                 module.register(tree, feature_cfg)
             after_cmds = {cmd.name: cmd for cmd in tree.get_commands()}
@@ -111,22 +118,7 @@ def load_features(tree, config: Dict, database_interface) -> Tuple:
                     except Exception as e:
                         log.error(f"Failed to remove command {cmd_name} after conflict in feature {slug}: {e}")
                 continue
-            if (
-                hasattr(module, "init_db")
-                and callable(module.init_db)
-                and "database_interface" in inspect.signature(module.init_db).parameters
-            ):
-                await module.init_db(database_interface)
-            elif (
-                hasattr(module, "init_db")
-                and callable(module.init_db)
-                and "database_interface" not in inspect.signature(module.init_db).parameters
-            ):
-                raise Exception("init_db function must accept database_interface parameter")
-            elif (
-                not hasattr(module, "init_db") and "database_interface" in inspect.signature(module.register).parameters
-            ):
-                log.info(f"Feature module {module_path} has no init_db function, skipping database initialization.")
+
             loaded[slug] = module
             log.info(f"Successfully loaded feature module {module_path}.")
         except Exception as e:

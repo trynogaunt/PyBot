@@ -1,38 +1,27 @@
-import discord
 from discord import app_commands
 
-from bot.core.checks import is_staff
 from bot.db.feature_pool import FeaturePool
 
-# this feature is for testing purposes only, it will be used to test the feature system and the command system, it will not be used in production
-# don't push on dev and main branches with this feature enabled, it can cause issues with the database and the bot, use it only on a testing branch and a testing server
-
 FEATURE = {
-    "slug": "question_day",  # The unique identifier for the feature
-    "name": "Question of the Day",  # The display name of the feature
-    "description": "A feature that allows the bot to manage the question of the day.",  # A brief description of the feature
-    "version": "1.0.0",  # The version of the feature
-    "author": "Tryno",  # The author of the feature
-    "requires_config": False,  # Whether the feature requires configuration
-    "permissions": ["send_messages", "embed_links"],  # Required permissions
+    "slug": "question_day",
+    "name": "Question of the Day",
+    "description": "A feature that allows the bot to manage the question of the day.",
+    "version": "1.0.0",
+    "author": "Tryno",
+    "requires_config": False,
+    "permissions": ["send_messages", "embed_links"],
 }
 
 
-def register(
-    tree: app_commands.CommandTree, config, database_interface: FeaturePool
-):  # Register the feature's commands with the bot's command tree
-
+def register(tree: app_commands.CommandTree, config, database_interface: FeaturePool):
     group = app_commands.Group(name=FEATURE["slug"], description="Testing commands")
+    tree.add_command(group)
 
-    async def init_db():
+
+async def init_db(database_interface: FeaturePool):
+    print("Initializing database tables for Question of the Day feature...")
+    try:
         await database_interface.add_table("test_table", ["id SERIAL PRIMARY KEY", "name TEXT"])
         return "Tables created successfully."
-
-    @is_staff()
-    @group.command(name="", description="Test command to check the parent folder of the command")
-    async def ping_command(interaction: discord.Interaction):
-
-        parent_folder = await database_interface.inspect_test()
-        await interaction.response.send_message(f"Parent folder: {parent_folder}", ephemeral=True)
-
-    tree.add_command(group)
+    except Exception as e:
+        print(f"Error initializing database tables: {e}")

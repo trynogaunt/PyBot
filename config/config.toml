@@ -1,4 +1,4 @@
-enabled_features = ["ping", "say", "version", "test_checks", "utils", "testing"]
+enabled_features = ["ping", "say", "version", "test_checks", "utils", "testing", "question_day"]
 
 [features]
 [features.say]

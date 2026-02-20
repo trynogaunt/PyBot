@@ -79,7 +79,7 @@ class BotApp(commands.Bot):
         self.tree.clear_commands(guild=None)
         await self.tree.sync()
 
-        loaded, failed = load_features(self.tree, self.config, self.feature_pool)
+        loaded, failed = await load_features(self.tree, self.config, self.feature_pool)
         logging.getLogger(__name__).info(f"Loaded features: {list(loaded.keys())}")
         if failed:
             logging.getLogger(__name__).warning(f"Failed to load features: {failed}")

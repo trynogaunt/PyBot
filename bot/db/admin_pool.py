@@ -13,9 +13,10 @@ class AdminPool(DatabasePool):
 
     async def scheme_check(self):
         available_schemas = await self.get_available_schemas()
-        missing_schemas = self.required_schemas - set(available_schemas)
+        missing_schemas = set(self.required_schemas) - set(available_schemas)
         if missing_schemas:
-            raise ValueError(f"Missing required schemas: {missing_schemas}")
+            for schema in missing_schemas:
+                await self._create_schema(schema)
 
     async def _create_table(self, schema: str, table_name: str, columns: List[str]):
         if not self.pool:

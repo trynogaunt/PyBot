@@ -16,7 +16,7 @@ FEATURE = {
 }
 
 
-def register(tree: app_commands.CommandTree, config, database_interface):
+def register(tree: app_commands.CommandTree, config):
     group = app_commands.Group(name=FEATURE["slug"], description="Help commands")
 
     @group.command(name="help", description="List all available commands")
