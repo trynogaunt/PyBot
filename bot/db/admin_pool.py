@@ -32,7 +32,7 @@ class AdminPool(DatabasePool):
             """
             )
 
-    async def loaded_modules(self) -> List[str]:
+    async def get_loaded_modules(self) -> List[str]:
         if not self.pool:
             raise ValueError("Database pool is not initialized.")
         async with self.pool.acquire() as connection:
