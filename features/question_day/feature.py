@@ -1,8 +1,12 @@
+import logging
+
 import discord
 from discord import app_commands
 
 from bot.core.checks import is_staff
 from bot.db.feature_pool import FeaturePool
+
+log = logging.getLogger(__name__)
 
 FEATURE = {
     "slug": "question_day",
@@ -28,18 +32,18 @@ def register(tree: app_commands.CommandTree, config, database_interface: Feature
 
 
 async def install(database_interface: FeaturePool) -> bool:
-    print("Initializing database tables for Question of the Day feature...")
     try:
         await database_interface.add_table("questions", ["id SERIAL PRIMARY KEY", "question_text TEXT"])
         return True
     except Exception as e:
-        print(f"Error initializing database tables: {e}")
+        log.error(f"Error initializing database tables: {e}")
         return False
 
 
-async def add_question(database_interface: FeaturePool, question: str):
+async def add_question(database_interface: FeaturePool, question: str) -> bool:
     try:
         await database_interface.insert("questions", ["question_text"], [question])
-        return "Question added successfully."
+        return True
     except Exception as e:
-        print(f"Error adding question: {e}")
+        log.error(f"Error adding question: {e}")
+        return False

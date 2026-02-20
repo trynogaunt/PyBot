@@ -94,7 +94,6 @@ async def load_features(tree, config: Dict, database_interface, installed_module
             register_signature = inspect.signature(module.register)
             params = list(register_signature.parameters.keys())
             if "database_interface" in params:
-                print(f"Calling register for feature {slug} with database_interface")
                 module.register(tree, feature_cfg, database_interface)
                 log.debug(f"Appel de install pour le module {slug} après l'enregistrement des commandes.")
                 if hasattr(module, "install") and inspect.iscoroutinefunction(module.install):
