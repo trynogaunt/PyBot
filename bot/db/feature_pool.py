@@ -83,7 +83,7 @@ class FeaturePool(DatabasePool):
             query = f"SELECT {', '.join(columns)} FROM features.{prefix}_{table_name}"
             if condition:
                 query += f" WHERE {condition}"
-            return await connection.fetch(query, *args)s
+            return await connection.fetch(query, *args)
 
     def _get_feature_caller(self):
         file_caller = inspect.currentframe().f_back.f_globals["__file__"]
