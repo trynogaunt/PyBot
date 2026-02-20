@@ -15,7 +15,8 @@ from dotenv import load_dotenv
 from ..core.checks import set_staff_roles
 from ..core.config import load_config, load_env
 from ..core.loader import load_features
-from ..db.pool import DatabasePool
+from ..db.admin_pool import AdminPool
+from ..db.feature_pool import FeaturePool
 
 
 def setup_logging(level: str = "INFO") -> None:
@@ -52,20 +53,25 @@ class BotApp(commands.Bot):
         intents.members = True
         super().__init__(command_prefix="!", intents=intents)
         self.guild = discord.Object(id=guild_id)
-        self.db_pool = None
+        self.feature_pool = None
+        self.admin_pool = None
 
     async def on_startup(self) -> None:
         logging.getLogger(__name__).info("Bot is starting up...")
         env = load_env()
         database_url = env.database_url
         schemas = env.database_schemas if hasattr(env, "database_schemas") else None
-        self.db_pool = DatabasePool(database_url=database_url, schemas=schemas)
-        await self.db_pool.connect()
+        self.feature_pool = FeaturePool(database_url=database_url, schemas=schemas)
+        self.admin_pool = AdminPool(database_url=database_url, schemas=schemas)
+        await self.feature_pool.connect()
+        await self.admin_pool.connect()
 
     async def on_shutdown(self) -> None:
         logging.getLogger(__name__).info("Bot is shutting down...")
-        if self.db_pool:
-            await self.db_pool.disconnect()
+        if self.feature_pool:
+            await self.feature_pool.disconnect()
+        if self.admin_pool:
+            await self.admin_pool.disconnect()
 
     async def setup_hook(self) -> None:
         await self.on_startup()
@@ -73,7 +79,7 @@ class BotApp(commands.Bot):
         self.tree.clear_commands(guild=None)
         await self.tree.sync()
 
-        loaded, failed = load_features(self.tree, self.config)
+        loaded, failed = load_features(self.tree, self.config, self.feature_pool)
         logging.getLogger(__name__).info(f"Loaded features: {list(loaded.keys())}")
         if failed:
             logging.getLogger(__name__).warning(f"Failed to load features: {failed}")

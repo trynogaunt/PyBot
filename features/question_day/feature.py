@@ -18,7 +18,7 @@ FEATURE = {
 }
 
 
-def register(tree: app_commands.CommandTree, config):  # Register the feature's commands with the bot's command tree
+def register(tree: app_commands.CommandTree, config, feature_pool):  # Register the feature's commands with the bot's command tree
     group = app_commands.Group(name=FEATURE["slug"], description="Testing commands")
 
     async def build_tables():
@@ -27,10 +27,6 @@ def register(tree: app_commands.CommandTree, config):  # Register the feature's 
     @is_staff()
     @group.command(name="", description="Test command to check the parent folder of the command")
     async def ping_command(interaction: discord.Interaction):
-        feature_pool = FeaturePool(
-            database_url="postgresql://postgres:ifYRQjLcCffSACLmgHTVvhISeCrlNBtK@switchyard.proxy.rlwy.net:43556/railway",
-            schemas={"features"},
-        )
 
         parent_folder = feature_pool.inspect_test()
         await interaction.response.send_message(f"Parent folder: {parent_folder}", ephemeral=True)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import inspect
 import logging
 from typing import Dict, List, Tuple
 
@@ -11,12 +12,12 @@ def _command_qualified_keys(tree) -> set[str]:
     return {cmd.name for cmd in tree.get_commands()}
 
 
-def load_features(tree, config: Dict) -> Tuple:
+def load_features(tree, config: Dict, database_interface) -> Tuple:
     """Dynamically load and register features based on config, return dict of loaded modules and dict of failed ones with error messages
 
     Each feature module must be located at features/{slug}/feature.py and define:
     - a FEATURE dictionary with keys: slug, name, description, version, author, requires_config (bool), permissions (list of str)
-    - a register(tree, config) function that registers the feature's commands to the provided tree using the provided config dict
+    - a register(tree, config, database_interface) function that registers the feature's commands to the provided tree using the provided config dict
 
     Parameters:
         tree: the app_commands.CommandTree to register commands to
@@ -89,7 +90,13 @@ def load_features(tree, config: Dict) -> Tuple:
             before = _command_qualified_keys(tree)
             log.debug(f"Commands before loading feature {slug}: {before}")
             before_cmds = {cmd.name: cmd for cmd in tree.get_commands()}
-            module.register(tree, feature_cfg)
+
+            register_signature = inspect.signature(module.register)
+            params = list(register_signature.parameters.keys())
+            if "database_interface" in params:
+                module.register(tree, feature_cfg, database_interface)
+            else:
+                module.register(tree, feature_cfg)
             after_cmds = {cmd.name: cmd for cmd in tree.get_commands()}
             duplicates = {
                 name for name, cmd in after_cmds.items() if name in before_cmds and before_cmds[name] is not cmd
