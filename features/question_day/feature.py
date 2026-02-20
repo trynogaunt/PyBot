@@ -1,4 +1,5 @@
 import logging
+from typing import Dict, List, Tuple
 
 import discord
 from discord import app_commands
@@ -40,9 +41,10 @@ async def install(database_interface: FeaturePool) -> bool:
         return False
 
 
-async def add_question(database_interface: FeaturePool, question: str) -> bool:
+async def add_question(database_interface: FeaturePool, question: str, response: List[str]) -> bool:
     try:
         await database_interface.insert("questions", ["question_text"], [question])
+        await database_interface.fetch("questions", ["id"], "question_text = $1", [question])
         return True
     except Exception as e:
         log.error(f"Error adding question: {e}")

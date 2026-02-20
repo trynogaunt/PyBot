@@ -75,6 +75,16 @@ class FeaturePool(DatabasePool):
                 *args,
             )
 
+    async def fetch(self, table_name: str, columns: List[str], condition: Optional[str] = None, *args):
+        prefix = str(self._get_feature_caller())
+        if not self.pool:
+            raise ValueError("Database pool is not initialized.")
+        async with self.pool.acquire() as connection:
+            query = f"SELECT {', '.join(columns)} FROM features.{prefix}_{table_name}"
+            if condition:
+                query += f" WHERE {condition}"
+            return await connection.fetch(query, *args)s
+
     def _get_feature_caller(self):
         file_caller = inspect.currentframe().f_back.f_globals["__file__"]
         parent_folder = Path(file_caller).parent.name
