@@ -111,7 +111,22 @@ def load_features(tree, config: Dict, database_interface) -> Tuple:
                     except Exception as e:
                         log.error(f"Failed to remove command {cmd_name} after conflict in feature {slug}: {e}")
                 continue
-
+            if (
+                hasattr(module, "init_db")
+                and callable(module.init_db)
+                and "database_interface" in inspect.signature(module.init_db).parameters
+            ):
+                await module.init_db(database_interface)
+            elif (
+                hasattr(module, "init_db")
+                and callable(module.init_db)
+                and "database_interface" not in inspect.signature(module.init_db).parameters
+            ):
+                raise Exception("init_db function must accept database_interface parameter")
+            elif (
+                not hasattr(module, "init_db") and "database_interface" in inspect.signature(module.register).parameters
+            ):
+                log.info(f"Feature module {module_path} has no init_db function, skipping database initialization.")
             loaded[slug] = module
             log.info(f"Successfully loaded feature module {module_path}.")
         except Exception as e:

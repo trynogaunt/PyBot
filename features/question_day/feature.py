@@ -18,17 +18,21 @@ FEATURE = {
 }
 
 
-def register(tree: app_commands.CommandTree, config, feature_pool):  # Register the feature's commands with the bot's command tree
+def register(
+    tree: app_commands.CommandTree, config, database_interface: FeaturePool
+):  # Register the feature's commands with the bot's command tree
+
     group = app_commands.Group(name=FEATURE["slug"], description="Testing commands")
 
-    async def build_tables():
-
+    async def init_db():
+        await database_interface.add_table("test_table", ["id SERIAL PRIMARY KEY", "name TEXT"])
+        return "Tables created successfully."
 
     @is_staff()
     @group.command(name="", description="Test command to check the parent folder of the command")
     async def ping_command(interaction: discord.Interaction):
 
-        parent_folder = feature_pool.inspect_test()
+        parent_folder = await database_interface.inspect_test()
         await interaction.response.send_message(f"Parent folder: {parent_folder}", ephemeral=True)
 
     tree.add_command(group)
