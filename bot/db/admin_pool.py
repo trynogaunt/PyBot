@@ -18,6 +18,44 @@ class AdminPool(DatabasePool):
             for schema in missing_schemas:
                 await self._create_schema(schema)
 
+    async def check_core_tables(self):
+        if not self.pool:
+            raise ValueError("Database pool is not initialized.")
+        async with self.pool.acquire() as connection:
+            await connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS core.modules (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT UNIQUE NOT NULL,
+                    installed BOOLEAN NOT NULL DEFAULT FALSE
+                );
+            """
+            )
+
+    async def loaded_modules(self) -> List[str]:
+        if not self.pool:
+            raise ValueError("Database pool is not initialized.")
+        async with self.pool.acquire() as connection:
+            rows = await connection.fetch(
+                """
+                SELECT name FROM core.modules WHERE installed = TRUE;
+            """
+            )
+            return [row["name"] for row in rows]
+
+    async def set_module_installed(self, module_name: str, installed: bool = True):
+        if not self.pool:
+            raise ValueError("Database pool is not initialized.")
+        async with self.pool.acquire() as connection:
+            await connection.execute(
+                """
+                INSERT INTO core.modules (name, installed) VALUES ($1, $2)
+                ON CONFLICT (name) DO UPDATE SET installed = EXCLUDED.installed;
+            """,
+                module_name,
+                installed,
+            )
+
     async def _create_table(self, schema: str, table_name: str, columns: List[str]):
         if not self.pool:
             raise ValueError("Database pool is not initialized.")
