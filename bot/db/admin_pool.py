@@ -48,6 +48,7 @@ class AdminPool(DatabasePool):
         if not self.pool:
             raise ValueError("Database pool is not initialized.")
         async with self.pool.acquire() as connection:
+            print(f"Setting module '{module_name}' installed status to {installed} in database.")
             await connection.execute(
                 """
                 INSERT INTO core.modules (name, installed) VALUES ($1, $2)

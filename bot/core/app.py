@@ -91,6 +91,14 @@ class BotApp(commands.Bot):
         loaded, failed, self.installed_modules = await load_features(
             self.tree, self.config, self.feature_pool, self.installed_modules
         )
+
+        self.installed_modules = list(set(self.installed_modules))  # Remove duplicates if any
+        for module_name in self.installed_modules:
+            try:
+                await self.admin_pool.set_module_installed(module_name, installed=True)
+            except Exception as e:
+                logging.getLogger(__name__).error(f"Error marking module {module_name} as installed: {e}")
+
         logging.getLogger(__name__).info(f"Loaded features: {list(loaded.keys())}")
         if failed:
             logging.getLogger(__name__).warning(f"Failed to load features: {failed}")
