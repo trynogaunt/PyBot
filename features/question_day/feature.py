@@ -35,16 +35,34 @@ def register(tree: app_commands.CommandTree, config, database_interface: Feature
 async def install(database_interface: FeaturePool) -> bool:
     try:
         await database_interface.add_table("questions", ["id SERIAL PRIMARY KEY", "question_text TEXT"])
+        await database_interface.add_table(
+            "responses",
+            [
+                "id SERIAL PRIMARY KEY",
+                "question_id INT REFERENCES questions(id)",
+                "response_text TEXT",
+                "is_correct BOOLEAN DEFAULT FALSE",
+                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+                "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+            ],
+        )
         return True
     except Exception as e:
         log.error(f"Error initializing database tables: {e}")
         return False
 
 
-async def add_question(database_interface: FeaturePool, question: str, response: List[str]) -> bool:
+async def add_question(
+    database_interface: FeaturePool, question: str, responses: List[str], correct_response: str
+) -> bool:
     try:
         await database_interface.insert("questions", ["question_text"], [question])
-        await database_interface.fetch("questions", ["id"], "question_text = $1", [question])
+        question_id = await database_interface.fetch("questions", ["id"], "question_text = $1", [question])
+        for response in responses:
+            is_correct = response == correct_response
+            await database_interface.insert(
+                "responses", ["question_id", "response_text", "is_correct"], [question_id, response, is_correct]
+            )
         return True
     except Exception as e:
         log.error(f"Error adding question: {e}")
