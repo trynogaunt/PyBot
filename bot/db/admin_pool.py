@@ -1,7 +1,5 @@
 from typing import Optional
 
-import asyncpg
-
 from .pool import DatabasePool, List
 
 
