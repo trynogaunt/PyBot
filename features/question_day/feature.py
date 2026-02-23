@@ -39,7 +39,7 @@ async def install(database_interface: FeaturePool) -> bool:
             "responses",
             [
                 "id SERIAL PRIMARY KEY",
-                "question_id INT REFERENCES questions(id)",
+                "question_id INT",
                 "response_text TEXT",
                 "is_correct BOOLEAN DEFAULT FALSE",
                 "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",

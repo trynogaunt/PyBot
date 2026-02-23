@@ -86,6 +86,12 @@ class FeaturePool(DatabasePool):
             return await connection.fetch(query, *args)
 
     def _get_feature_caller(self):
-        file_caller = inspect.currentframe().f_back.f_globals["__file__"]
-        parent_folder = Path(file_caller).parent.name
-        return parent_folder
+        # Remonte la stack jusqu'à sortir du dossier 'db'
+        stack = inspect.stack()
+        for frame_info in stack:
+            file_path = frame_info.filename
+            parent_folder = Path(file_path).parent.name
+            if parent_folder != "db":
+                return parent_folder
+        # Fallback si rien trouvé
+        return "unknown"
