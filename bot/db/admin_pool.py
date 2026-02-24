@@ -48,7 +48,7 @@ class AdminPool(DatabasePool):
         if not self.pool:
             raise ValueError("Database pool is not initialized.")
         async with self.pool.acquire() as connection:
-            print(f"Setting module '{module_name}' installed status to {installed} in database.")
+            print(f"Setting module '{module_name}' installed status to {'installed' if installed else 'not installed'} in database.")
             await connection.execute(
                 """
                 INSERT INTO core.modules (name, installed) VALUES ($1, $2)
@@ -77,8 +77,6 @@ class AdminPool(DatabasePool):
     async def _create_schema(self, schema: str):
         if not self.pool:
             raise ValueError("Database pool is not initialized.")
-        if not self._validate_schema(schema):
-            raise ValueError(f"Schema must be one of {self.required_schemas}.")
         async with self.pool.acquire() as connection:
             await connection.execute(
                 f"""

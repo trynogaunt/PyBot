@@ -89,7 +89,7 @@ class BotApp(commands.Bot):
         await self.tree.sync()
 
         loaded, failed, self.installed_modules = await load_features(
-            self.tree, self.config, self.feature_pool, self.installed_modules
+            self.tree, self.config, self.feature_pool, self.admin_pool, self.installed_modules
         )
 
         self.installed_modules = list(set(self.installed_modules))  # Remove duplicates if any

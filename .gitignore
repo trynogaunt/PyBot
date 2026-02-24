@@ -10,3 +10,5 @@ tests/
 *-cwd
 nul
 features/testing/*
+make.cmd
+scripts/tasks.ps1

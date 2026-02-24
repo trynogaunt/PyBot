@@ -12,7 +12,7 @@ def _command_qualified_keys(tree) -> set[str]:
     return {cmd.name for cmd in tree.get_commands()}
 
 
-async def load_features(tree, config: Dict, database_interface, installed_modules: List[str]) -> Tuple:
+async def load_features(tree, config: Dict, database_interface, admin_interface,  installed_modules: List[str]) -> Tuple:
     """Dynamically load and register features based on config, return dict of loaded modules and dict of failed ones with error messages
 
     Each feature module must be located at features/{slug}/feature.py and define:
@@ -30,10 +30,11 @@ async def load_features(tree, config: Dict, database_interface, installed_module
     params_needed: List[str] = ["slug", "name", "description", "version", "author", "requires_config", "permissions"]
     enabled: List[str] = config["enabled_features"]
     features_config: Dict = config.get("features", {})
+    installed_modules = installed_modules or []
 
     loaded: Dict[str, object] = {}
     failed: Dict[str, str] = {}
-
+    
     for slug in enabled:
         module_path = f"features.{slug}.feature"
         try:
@@ -96,7 +97,9 @@ async def load_features(tree, config: Dict, database_interface, installed_module
             if "database_interface" in params:
                 module.register(tree, feature_cfg, database_interface)
                 log.debug(f"Appel de install pour le module {slug} après l'enregistrement des commandes.")
-                if hasattr(module, "install") and inspect.iscoroutinefunction(module.install):
+                if hasattr(module, "install") and inspect.iscoroutinefunction(module.install) and slug not in installed_modules:
+                    await admin_interface._create_schema(slug)  # Ensure the schema exists before installation
+                    
                     installed = await module.install(database_interface)
                     if installed:
                         log.info(f"Feature {slug} installed successfully.")
