@@ -6,13 +6,14 @@ from contextlib import asynccontextmanager
 from .pool import DatabasePool
 
 
-class FeaturePool(DatabasePool):
-    def __init__(self, database_url: str = None, schemas: Optional[set[str]] = None):
-        super().__init__(database_url=database_url, schemas=schemas)
+class FeaturePool():
+    def __init__(self, pool, schema: Optional[str] = None):
+        self.schema = schema
+        self.pool = pool
 
     def _feature_schema(self) -> str:
-        schema : str = str(self._get_feature_caller())
-        return schema
+        if self.schema:
+            return self.schema
     
     def _get_feature_caller(self):
         # Remonte la stack jusqu'à sortir du dossier 'db'
@@ -30,6 +31,7 @@ class FeaturePool(DatabasePool):
         if not self.pool:
             raise ValueError("Database pool is not initialized.")
         schema = self._feature_schema()
+        print(f"Using schema '{schema}' for database operations.")
         async with self.pool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute(f"SET search_path TO {schema}")
@@ -37,6 +39,7 @@ class FeaturePool(DatabasePool):
 
     async def add_table(self, table_name: str, columns: List[str]):
         async with self._scoped_conn() as connection:
+            print(f"Creating table '{table_name}' with columns {columns} in schema '{self._feature_schema()}'.")
             await connection.execute(
                 f"""
                 CREATE TABLE IF NOT EXISTS {table_name} (
@@ -54,13 +57,17 @@ class FeaturePool(DatabasePool):
 
     async def insert(self, table_name: str, columns: List[str], values: List):
         async with self._scoped_conn() as connection:
-            inserted_id = await connection.fetchrow(
-                f"""
-                INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(['$' + str(i + 1) for i in range(len(values))])}) RETURNING id;
-            """,
-                *values,
-            )
-            return inserted_id["id"]
+            try: 
+                inserted_id = await connection.fetchrow(
+                    f"""
+                    INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(['$' + str(i + 1) for i in range(len(values))])}) RETURNING id;
+                """,
+                    *values,
+                )
+                return inserted_id["id"] if inserted_id else None
+            except Exception as e:
+                log.error(f"Error executing insert: {e} \n Table: {table_name} \n Columns: {columns} \n Values: {values}")
+                return None
 
     async def query(self, query: str, *args):
         async with self._scoped_conn() as connection:

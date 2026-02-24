@@ -15,8 +15,9 @@ from dotenv import load_dotenv
 from ..core.checks import set_staff_roles
 from ..core.config import load_config, load_env
 from ..core.loader import load_features
-from ..db.admin_pool import AdminPool
+from ..db.pool import DatabasePool
 from ..db.feature_pool import FeaturePool
+from ..db.admin_pool import AdminPool
 
 
 def setup_logging(level: str = "INFO") -> None:
@@ -53,8 +54,7 @@ class BotApp(commands.Bot):
         intents.members = True
         super().__init__(command_prefix="!", intents=intents)
         self.guild = discord.Object(id=guild_id)
-        self.feature_pool = None
-        self.admin_pool = None
+        self.pool = None
         self.installed_modules = []
 
     async def on_startup(self) -> None:
@@ -62,25 +62,11 @@ class BotApp(commands.Bot):
         env = load_env()
         database_url = env.database_url
         schemas = env.database_schemas if hasattr(env, "database_schemas") else None
-        self.feature_pool = FeaturePool(database_url=database_url, schemas=schemas)
-        self.admin_pool = AdminPool(database_url=database_url, schemas=schemas)
-        await self.feature_pool.connect()
-        await self.admin_pool.connect()
+        self.pool = DatabasePool(database_url=database_url, schemas=schemas)
+        self.admin_pool = self.pool.for_schema("admin")
+        await self.pool.connect()
         await self.admin_pool.check_core_tables()
         self.installed_modules = await self.admin_pool.get_installed_modules()
-
-    async def on_shutdown(self) -> None:
-        logging.getLogger(__name__).info("Bot is shutting down...")
-        for module_name in self.installed_modules:
-            try:
-                await self.admin_pool.set_module_installed(module_name, installed=False)
-                logging.getLogger(__name__).info(f"Module {module_name} marked as not installed in database.")
-            except Exception as e:
-                logging.getLogger(__name__).error(f"Error marking module {module_name} as not installed: {e}")
-        if self.feature_pool:
-            await self.feature_pool.disconnect()
-        if self.admin_pool:
-            await self.admin_pool.disconnect()
 
     async def setup_hook(self) -> None:
         await self.on_startup()
@@ -89,7 +75,7 @@ class BotApp(commands.Bot):
         await self.tree.sync()
 
         loaded, failed, self.installed_modules = await load_features(
-            self.tree, self.config, self.feature_pool, self.admin_pool, self.installed_modules
+            self.tree, self.config, self.pool, self.admin_pool, self.installed_modules
         )
 
         self.installed_modules = list(set(self.installed_modules))  # Remove duplicates if any

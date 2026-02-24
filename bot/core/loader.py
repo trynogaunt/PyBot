@@ -4,6 +4,7 @@ import importlib
 import inspect
 import logging
 from typing import Dict, List, Tuple
+from ..db.feature_pool import FeaturePool
 
 log = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ def _command_qualified_keys(tree) -> set[str]:
     return {cmd.name for cmd in tree.get_commands()}
 
 
-async def load_features(tree, config: Dict, database_interface, admin_interface,  installed_modules: List[str]) -> Tuple:
+async def load_features(tree, config: Dict, feature_pool, admin_interface,  installed_modules: List[str]) -> Tuple:
     """Dynamically load and register features based on config, return dict of loaded modules and dict of failed ones with error messages
 
     Each feature module must be located at features/{slug}/feature.py and define:
@@ -89,21 +90,32 @@ async def load_features(tree, config: Dict, database_interface, admin_interface,
         try:
 
             before = _command_qualified_keys(tree)
-            log.debug(f"Commands before loading feature {slug}: {before}")
             before_cmds = {cmd.name: cmd for cmd in tree.get_commands()}
 
             register_signature = inspect.signature(module.register)
             params = list(register_signature.parameters.keys())
             if "database_interface" in params:
-                module.register(tree, feature_cfg, database_interface)
-                log.debug(f"Appel de install pour le module {slug} après l'enregistrement des commandes.")
+                feature_db = FeaturePool(feature_pool.pool, schema=slug)
+                module.register(tree, feature_cfg, feature_db)
+                log.info(f"Registered feature {slug} with database interface.")
                 if hasattr(module, "install") and inspect.iscoroutinefunction(module.install) and slug not in installed_modules:
-                    await admin_interface._create_schema(slug)  # Ensure the schema exists before installation
+                    try:
+                        await admin_interface._create_schema(slug)  # Ensure the schema exists before installation
+                        log.info(f"Schema for feature {slug} created successfully before installation.")
+                    except Exception as e:
+                        log.error(f"Failed to create schema for feature {slug} before installation: {e}")
+                        failed[slug] = "InstallationError: Failed to create database schema: " + str(e)
+                        continue
                     
-                    installed = await module.install(database_interface)
+                    installed = await module.install(feature_db)
                     if installed:
-                        log.info(f"Feature {slug} installed successfully.")
-                        installed_modules.append(slug)
+                        db_install = await admin_interface.set_module_installed(slug, installed=installed)
+                        if db_install:
+                            log.info(f"Feature {slug} installed successfully.")
+                        else:
+                            log.error(f"Failed to mark feature {slug} as installed in database.")
+                    else:
+                        log.error(f"Installation function for feature {slug} returned False.")
             else:
                 module.register(tree, feature_cfg)
             after_cmds = {cmd.name: cmd for cmd in tree.get_commands()}
