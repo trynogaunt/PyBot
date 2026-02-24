@@ -58,6 +58,16 @@ class AdminPool(DatabasePool):
                 installed,
             )
 
+    async def _drop_features_tables(self, schema: str):
+        if not self.pool:
+            raise ValueError("Database pool is not initialized.")
+        async with self.pool.acquire() as connection:
+            await connection.execute(
+                f"""
+                DROP SCHEMA IF EXISTS {schema} CASCADE;
+            """
+            )
+    
     async def _create_table(self, schema: str, table_name: str, columns: List[str]):
         if not self.pool:
             raise ValueError("Database pool is not initialized.")
