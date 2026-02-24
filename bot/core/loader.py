@@ -98,7 +98,8 @@ async def load_features(tree, config: Dict, feature_pool, admin_interface,  inst
                 feature_db = FeaturePool(feature_pool.pool, schema=slug)
                 module.register(tree, feature_cfg, feature_db)
                 log.info(f"Registered feature {slug} with database interface.")
-                if hasattr(module, "install") and inspect.iscoroutinefunction(module.install) and slug not in installed_modules:
+                if hasattr(module, "install") and slug not in installed_modules:
+                    log.info(f"Installing feature {slug}...")
                     try:
                         await admin_interface._create_schema(slug)  # Ensure the schema exists before installation
                         log.info(f"Schema for feature {slug} created successfully before installation.")
@@ -109,11 +110,10 @@ async def load_features(tree, config: Dict, feature_pool, admin_interface,  inst
                     
                     installed = await module.install(feature_db)
                     if installed:
-                        db_install = await admin_interface.set_module_installed(slug, installed=installed)
-                        if db_install:
-                            log.info(f"Feature {slug} installed successfully.")
-                        else:
-                            log.error(f"Failed to mark feature {slug} as installed in database.")
+                        try:
+                            db_install = await admin_interface.set_module_installed(slug, installed=installed)
+                        except Exception as e:
+                            log.error(f"Failed to mark feature {slug} as installed in database: {e}")
                     else:
                         log.error(f"Installation function for feature {slug} returned False.")
             else:

@@ -28,7 +28,6 @@ def register(tree: app_commands.CommandTree, config, database_interface: Feature
     @is_staff()
     async def add_question_command(interaction: discord.Interaction, question: str, responses: str, correct_response: str):
         responses_list = responses.split(",")
-        print(responses_list)
         await interaction.response.defer(ephemeral=True)
         result = await add_question(database_interface, question, responses_list, correct_response)
         if result:

@@ -51,14 +51,12 @@ class AdminPool():
                 SELECT name FROM core.modules WHERE installed = TRUE;
             """
             )
-            print(f"Installed modules from database: {[row['name'] for row in rows]}")
             return [row["name"] for row in rows]
 
     async def set_module_installed(self, module_name: str, installed: bool = True):
         if not self.pool:
             raise ValueError("Database pool is not initialized.")
         async with self.pool.acquire() as connection:
-            print(f"Setting module '{module_name}' installed status to {'installed' if installed else 'not installed'} in database.")
             await connection.execute(
                 """
                 INSERT INTO core.modules (name, installed) VALUES ($1, $2)
