@@ -62,9 +62,9 @@ class BotApp(commands.Bot):
         env = load_env()
         database_url = env.database_url
         schemas = env.database_schemas if hasattr(env, "database_schemas") else None
-        self.pool = DatabasePool(database_url=database_url, schemas=schemas)
-        self.admin_pool = self.pool.for_schema("admin")
+        self.pool = DatabasePool(database_url=database_url)
         await self.pool.connect()
+        self.admin_pool = self.pool.core_pool()
         await self.admin_pool.check_core_tables()
         self.installed_modules = await self.admin_pool.get_installed_modules()
 

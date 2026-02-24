@@ -1,16 +1,26 @@
 from typing import Optional
 
+from contextlib import asynccontextmanager
+import asyncpg
 from .pool import DatabasePool, List
 
 
-class AdminPool(DatabasePool):
-    def __init__(self, database_url: str = None, schemas: Optional[set[str]] = None):
-        super().__init__(database_url=database_url, schemas=schemas)
+class AdminPool():
+    def __init__(self,pool: asyncpg.Pool):
+        self.schema = "core"
+        self.pool: Optional[asyncpg.Pool] = pool
+        
+    @asynccontextmanager
+    async def _scoped_conn(self):
+        if not self.pool:
+            raise ValueError("Database pool is not initialized.")
+        schema = self.schema.replace('"', '""')
 
-    async def connect(self):
-        await super().connect()
-        await self.scheme_check()
-
+        async with self.pool.acquire() as conn:
+            async with conn.transaction():
+                await conn.execute(f'SET LOCAL search_path TO "{schema}"')
+                yield conn
+    
     async def scheme_check(self):
         available_schemas = await self.get_available_schemas()
         missing_schemas = set(self.required_schemas) - set(available_schemas)

@@ -1,4 +1,6 @@
 import os
+import asyncpg
+import logging
 from typing import List, Optional
 
 
@@ -16,6 +18,11 @@ class DatabasePool:
         self._ensure_connected()
         from .feature_pool import FeaturePool
         return FeaturePool(self.pool, schema=schema)
+
+    def core_pool(self):
+        self._ensure_connected()
+        from .admin_pool import AdminPool
+        return AdminPool(self.pool)
     
     def _validate_schema(self, schema: str) -> bool:
         if schema not in self.required_schemas:
