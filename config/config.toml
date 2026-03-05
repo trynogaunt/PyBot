@@ -7,3 +7,7 @@ ephemeral_default = true
 [features.utils]
 ephemeral_default = true
 guild_id=1218400838196662403
+
+[features.question_day]
+ephemeral_default = true
+channel_id = [1234333032886829076, 1084891881298726932] # Replace with actual channel IDs where the question of the day should be sent

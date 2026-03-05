@@ -12,3 +12,4 @@ nul
 features/testing/*
 make.cmd
 scripts/tasks.ps1
+CLAUDE.md

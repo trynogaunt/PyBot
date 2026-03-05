@@ -3,8 +3,9 @@ from pathlib import Path
 from typing import List, Optional
 from contextlib import asynccontextmanager
 import asyncpg
+import logging
 
-
+log = logging.getLogger(__name__)
 
 class FeaturePool():
     def __init__(self, pool:asyncpg.Pool, schema: Optional[str] = None):
@@ -59,7 +60,7 @@ class FeaturePool():
             log.error(f"Error counting rows in {table_name}: {e}")
             return 0
     
-    async def fetch_one(self, table_name: str, columns: List[str], condition: Optional[str] = None, order_by: Optional[str] = None) -> Optional[asyncpg.Record]:
+    async def fetch_one(self, table_name: str, columns: List[str], condition: Optional[str] = None, order_by: Optional[str] = None, *args) -> Optional[asyncpg.Record]:
         try:
             columns_sql = ", ".join(columns)
             query = f"SELECT {columns_sql} FROM {table_name}"
@@ -67,13 +68,13 @@ class FeaturePool():
                 query += f" WHERE {condition}"
             if order_by:
                 query += f" ORDER BY {order_by}"
-            result = await self.fetch(query)
+            result = await self.fetch(query, *args)
             return result[0] if result else None
         except Exception as e:
             log.error(f"Error fetching from {table_name}: {e}")
             return None
     
-    async def fetch_all(self, table_name: str, columns: List[str], condition: Optional[str] = None, order_by: Optional[str] = None) -> List[asyncpg.Record]:
+    async def fetch_all(self, table_name: str, columns: List[str], condition: Optional[str] = None, order_by: Optional[str] = None, *args) -> List[asyncpg.Record]:
         try:
             columns_sql = ", ".join(columns)
             query = f"SELECT {columns_sql} FROM {table_name}"
@@ -81,7 +82,8 @@ class FeaturePool():
                 query += f" WHERE {condition}"
             if order_by:
                 query += f" ORDER BY {order_by}"
-            return await self.fetch(query)
+            log.info(f"Executing query: {query} with args: {args}")
+            return await self.fetch(query, *args)
         except Exception as e:
             log.error(f"Error fetching from {table_name}: {e}")
             return []
@@ -91,6 +93,7 @@ class FeaturePool():
             columns_sql = ", ".join(columns)
             placeholders = ", ".join(f"${i+1}" for i in range(len(values)))
             query = f"INSERT INTO {table_name} ({columns_sql}) VALUES ({placeholders}) RETURNING id"
+            log.info(f"Executing query: {query} with values: {values}")
             result = await self.query(query, *values)
             return result[0]["id"] if result else None
         except Exception as e:

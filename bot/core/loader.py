@@ -13,7 +13,7 @@ def _command_qualified_keys(tree) -> set[str]:
     return {cmd.name for cmd in tree.get_commands()}
 
 
-async def load_features(tree, config: Dict, feature_pool, admin_interface,  installed_modules: List[str]) -> Tuple:
+async def load_features(tree,bot, config: Dict, feature_pool, admin_interface,  installed_modules: List[str]) -> Tuple:
     """Dynamically load and register features based on config, return dict of loaded modules and dict of failed ones with error messages
 
     Each feature module must be located at features/{slug}/feature.py and define:
@@ -96,7 +96,13 @@ async def load_features(tree, config: Dict, feature_pool, admin_interface,  inst
             params = list(register_signature.parameters.keys())
             if "database_interface" in params:
                 feature_db = FeaturePool(feature_pool.pool, schema=slug)
-                module.register(tree, feature_cfg, feature_db)
+                kwargs = {"tree": tree, "config": feature_cfg, "database_interface": feature_db}
+                if "bot" in params:
+                    kwargs["bot"] = bot
+                if inspect.iscoroutinefunction(module.register):
+                    await module.register(**kwargs)
+                else:
+                    module.register(**kwargs)
                 log.info(f"Registered feature {slug} with database interface.")
                 if hasattr(module, "install") and slug not in installed_modules:
                     log.info(f"Installing feature {slug}...")
