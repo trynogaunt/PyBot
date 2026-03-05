@@ -97,7 +97,7 @@ class BotApp(commands.Bot):
 
         if isinstance(error, app_commands.CommandOnCooldown):
             logging.getLogger(__name__).warning(f"Command on cooldown {interaction.command}: {error}")
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 f"⏳ Cette commande est en cooldown. Réessaie dans {error.retry_after:.1f} secondes.",
                 ephemeral=True,
             )
@@ -105,20 +105,20 @@ class BotApp(commands.Bot):
 
         if isinstance(error, app_commands.MissingPermissions):
             logging.getLogger(__name__).warning(f"Missing permissions for command {interaction.command}: {error}")
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "❌ Tu n'as pas les permissions nécessaires pour utiliser cette commande.", ephemeral=True
             )
             return
 
         if isinstance(error, app_commands.CheckFailure):
             logging.getLogger(__name__).warning(f"Check failed for command {interaction.command}: {error}")
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "❌ Tu ne remplis pas les conditions pour utiliser cette commande.", ephemeral=True
             )
             return
 
         logging.getLogger(__name__).error(f"Error in command {interaction.command}: {error}")
-        await interaction.response.send_message(
+        await interaction.followup.send(
             "❌ Une erreur est survenue lors de l'exécution de la commande.", ephemeral=True
         )
 

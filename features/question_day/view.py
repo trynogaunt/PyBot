@@ -1,7 +1,7 @@
 import discord
 from typing import List, Dict, Tuple
 
-class DayView(discord.ui.View):
+class DayView(discord.ui.LayoutView):
     def __init__(self, question_text: str, responses: List[Dict[str, str]], correct_response: str):
         super().__init__()
         self.question_text = question_text
