@@ -99,3 +99,11 @@ class FeaturePool():
         except Exception as e:
             log.error(f"Error inserting into {table_name}: {e}")
             return None
+    
+    async def query(self, query: str, *args) -> List[asyncpg.Record]:
+        try:
+            async with self._scoped_conn() as conn:
+                return await conn.fetch(query, *args)
+        except Exception as e:
+            log.error(f"Error executing query: {e}")
+            return []
