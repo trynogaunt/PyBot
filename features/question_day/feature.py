@@ -1,6 +1,7 @@
 import logging
 import datetime
 import time
+import random
 from typing import Dict, List, Tuple
 import asyncio
 
@@ -52,6 +53,12 @@ async def register(tree: app_commands.CommandTree, bot: discord.Client, config, 
        else:
             await interaction.response.send_message("No question of the day found.", ephemeral=True) 
 
+    @group.command(name="send", description="Send the question of the day to a channel")
+    @is_staff()
+    async def send_question_command(interaction: discord.Interaction, channel: discord.TextChannel):
+        await interaction.response.defer(ephemeral=True)
+        await send_question_of_the_day(bot, database_interface, channel.id)
+        await interaction.followup.send(f"Sent question of the day to {channel.mention}", ephemeral=True)
             
     tree.add_command(group)
 
@@ -102,7 +109,6 @@ async def get_question_of_the_day(database_interface: FeaturePool) -> Tuple[str,
     """
     try:
         questions = await database_interface.fetch_all("questions", ["id", "question_text"], _AVAILABLE_QUESTION)
-        log.info(f"Fetched questions: {questions}")
     except Exception as e:
         log.error(f"Error fetching question of the day: {e}")
         return None, [], None
@@ -110,4 +116,48 @@ async def get_question_of_the_day(database_interface: FeaturePool) -> Tuple[str,
     if not questions:
         log.info("No available questions found.")
         return None, [], None
+    
+    log.info(f"Fetched questions: {questions}")
+    selected_question = random.choice(questions)
+    question_id = selected_question["id"]
+    question_text = selected_question["question_text"]
+    log.info(f"Selected question ID: {question_id}, text: {question_text}")
+    try:
+        responses = await database_interface.fetch_all("responses", ["response_text", "is_correct"], f"question_id = {question_id}")
+    except Exception as e:
+        log.error(f"Error fetching responses for question ID {question_id}: {e}")
+        return question_text, [], None
+    
+    log.info(f"Fetched responses for question ID {question_id}: {responses}")
+    correct_response = next((r for r in responses if r["is_correct"]), None)
+    return question_text, responses, correct_response
 
+async def mark_question_as_asked(database_interface: FeaturePool, question_id: int) -> bool:
+    """
+    Marks the specified question as asked by updating the asked_at timestamp.
+    """
+    try:
+        await database_interface.execute(f"UPDATE responses SET asked_at = NOW() WHERE question_id = {question_id}")
+        return True
+    except Exception as e:
+        log.error(f"Error marking question ID {question_id} as asked: {e}")
+        return False
+    
+async def send_question_of_the_day(bot: discord.Client, database_interface: FeaturePool, channel_id: int):
+    question_text, responses, correct_response = await get_question_of_the_day(database_interface)
+    if not question_text:
+        log.info("No question of the day to send.")
+        return
+    
+    channel = bot.get_channel(channel_id)
+    if not channel:
+        log.error(f"Channel with ID {channel_id} not found.")
+        return
+    
+    view = DayView(question_text,responses, correct_response)
+    
+    try:
+        await channel.send(content=f"**Question of the Day:** {question_text}", view=view)
+        log.info(f"Sent question of the day to channel ID {channel_id}")
+    except Exception as e:
+        log.error(f"Error sending question of the day: {e}")
